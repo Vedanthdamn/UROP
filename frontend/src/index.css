@@ -1,0 +1,34 @@
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  @apply m-0 min-h-screen bg-night text-slate-100 font-sans;
+  background-image:
+    radial-gradient(circle at 16% 14%, rgba(52, 211, 153, 0.16), transparent 34%),
+    radial-gradient(circle at 78% 2%, rgba(56, 189, 248, 0.18), transparent 33%),
+    radial-gradient(circle at 88% 82%, rgba(14, 165, 233, 0.16), transparent 38%),
+    linear-gradient(145deg, #05101b 0%, #0b1724 45%, #08111a 100%);
+  background-attachment: fixed;
+}
+
+#root {
+  @apply min-h-screen;
+}
+
+.glass-card {
+  @apply rounded-2xl border border-borderglass bg-glass/90 shadow-glass backdrop-blur-xl;
+}
+
+.section-title {
+  @apply font-display text-lg font-semibold text-slate-50;
+}
