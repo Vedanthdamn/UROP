@@ -340,6 +340,8 @@ def run_splitfed_pipeline(
     _ = fl.__version__  # Explicit Flower dependency usage.
 
     hospital_paths, global_test_X, global_test_y = _build_splitfed_datasets(random_state=random_state)
+    if global_test_X.size == 0 or global_test_y.size == 0:
+        raise RuntimeError("Global test split is empty; cannot run unbiased SplitFed evaluation.")
     client_data = _prepare_clients(hospital_paths, random_state=random_state)
 
     input_dim = next(iter(client_data.values()))["X_train"].shape[1]
