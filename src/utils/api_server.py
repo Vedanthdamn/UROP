@@ -12,10 +12,11 @@ from fastapi import FastAPI
 app = FastAPI(title="Healthcare FL Metrics API", version="1.0.0")
 
 
-METRICS_FILE = Path("data/processed/metrics.json")
-HOSPITAL_METRICS_FILE = Path("data/processed/hospital_metrics.json")
-GLOBAL_METRICS_FILE = Path("data/processed/global_metrics.json")
-CLIENTS_DIR = Path("clients")
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+METRICS_FILE = PROJECT_ROOT / "data" / "processed" / "metrics.json"
+HOSPITAL_METRICS_FILE = PROJECT_ROOT / "data" / "processed" / "hospital_metrics.json"
+GLOBAL_METRICS_FILE = PROJECT_ROOT / "data" / "processed" / "global_metrics.json"
+CLIENTS_DIR = PROJECT_ROOT / "clients"
 
 
 def _load_json_if_exists(path: Path) -> Dict[str, Any] | None:
