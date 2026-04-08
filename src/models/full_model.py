@@ -20,13 +20,15 @@ def build_full_model(input_dim: int, learning_rate: float = 1e-3) -> tf.keras.Mo
     model = tf.keras.Sequential(
         [
             tf.keras.layers.Input(shape=(input_dim,)),
-            tf.keras.layers.Dense(256, activation="relu"),
+            tf.keras.layers.Dense(64, activation="relu", kernel_initializer="he_normal"),
             tf.keras.layers.BatchNormalization(),
-            tf.keras.layers.Dropout(0.3),
-            tf.keras.layers.Dense(128, activation="relu"),
             tf.keras.layers.Dropout(0.2),
-            tf.keras.layers.Dense(64, activation="relu"),
-            tf.keras.layers.Dense(32, activation="relu"),
+            tf.keras.layers.Dense(32, activation="relu", kernel_initializer="he_normal"),
+            tf.keras.layers.BatchNormalization(),
+            tf.keras.layers.Dropout(0.2),
+            tf.keras.layers.Dense(16, activation="relu", kernel_initializer="he_normal"),
+            tf.keras.layers.BatchNormalization(),
+            tf.keras.layers.Dropout(0.2),
             tf.keras.layers.Dense(1, activation="sigmoid"),
         ]
     )
