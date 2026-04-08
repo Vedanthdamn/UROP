@@ -8,8 +8,7 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 import flwr as fl
 from flwr.common import Parameters, Scalar, parameters_to_ndarrays
 
-from client_model import get_client_model
-from server_model import get_server_model
+from src.models import get_client_model, get_server_model
 
 if TYPE_CHECKING:
     import tensorflow as tf
