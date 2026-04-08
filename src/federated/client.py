@@ -10,9 +10,8 @@ import pandas as pd
 import tensorflow as tf
 from sklearn.model_selection import train_test_split
 
-from client_model import get_client_model
-from dp_utils import apply_dp
-from server_model import get_server_model
+from src.federated.dp_utils import apply_dp
+from src.models import get_client_model, get_server_model
 
 
 def _resolve_target_column(df: pd.DataFrame) -> str:
