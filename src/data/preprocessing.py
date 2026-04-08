@@ -113,7 +113,10 @@ def _scale_numerical_features(X: pd.DataFrame, categorical_cols: list[str]) -> p
     return X
 
 
-def load_and_preprocess(csv_path: str = "data/raw/heart_disease_uci.csv") -> Tuple[np.ndarray, np.ndarray]:
+def load_and_preprocess(
+    csv_path: str = "data/raw/heart_disease_uci.csv",
+    use_global_scaling: bool = True,
+) -> Tuple[np.ndarray, np.ndarray]:
     """Load and preprocess the heart disease dataset.
 
     Steps:
@@ -123,10 +126,12 @@ def load_and_preprocess(csv_path: str = "data/raw/heart_disease_uci.csv") -> Tup
     4. Fill missing values (mean for numeric, mode for categorical)
     5. Label encode selected categorical columns (cp, restecg, thal)
     6. Split into features (X) and target (y)
-    7. Scale numerical features using StandardScaler
+    7. Optionally scale numerical features using StandardScaler
 
     Args:
         csv_path: Path to the raw CSV dataset.
+        use_global_scaling: Whether to apply global StandardScaler normalization.
+            Set to False when using client-wise scaling to avoid global normalization.
 
     Returns:
         Tuple containing:
@@ -134,6 +139,8 @@ def load_and_preprocess(csv_path: str = "data/raw/heart_disease_uci.csv") -> Tup
         - y as a numpy array target
     """
     df = pd.read_csv(csv_path)
+    if df.empty:
+        raise ValueError("Input dataset is empty.")
     _validate_columns(df)
 
     df = df.drop(columns=[col for col in DROP_COLUMNS if col in df.columns])
@@ -147,8 +154,11 @@ def load_and_preprocess(csv_path: str = "data/raw/heart_disease_uci.csv") -> Tup
 
     target_col = _resolve_target_column(df)
     y = df[target_col].to_numpy()
+    if y.size == 0:
+        raise ValueError("Target column is empty after preprocessing.")
     X = df.drop(columns=[target_col])
 
-    X = _scale_numerical_features(X, categorical_cols=categorical_cols)
+    if use_global_scaling:
+        X = _scale_numerical_features(X, categorical_cols=categorical_cols)
 
     return X.to_numpy(dtype=np.float32), y
