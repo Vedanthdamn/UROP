@@ -130,6 +130,33 @@ fairness:
 - Client-local scaling, a disjoint held-out test set, and a shared 0.5 threshold provide a
   fair, leakage-free comparison across all three paradigms.
 
+## Figures
+
+All figures are regenerated from the trained models and saved metrics and reflect the
+scores in the table above.
+
+| Test accuracy | Metric comparison |
+| --- | --- |
+| ![Test accuracy comparison](plots/accuracy_comparison.png) | ![Metric comparison](plots/metrics_comparison.png) |
+
+| ROC curves | Precision-recall curves |
+| --- | --- |
+| ![ROC curves](plots/roc_curve.png) | ![Precision-recall curves](plots/precision_recall_curve.png) |
+
+| Federated rounds | SplitFed rounds |
+| --- | --- |
+| ![Federated rounds vs accuracy](plots/fl_rounds_accuracy.png) | ![SplitFed rounds vs accuracy](plots/splitfed_rounds_accuracy.png) |
+
+| Centralized training curves | SplitFed confusion matrix |
+| --- | --- |
+| ![Centralized loss curve](plots/loss_curve.png) | ![SplitFed confusion matrix](plots/confusion_matrix.png) |
+
+Regenerate every figure from the current models and metrics with:
+
+```bash
+python src/utils/generate_report_plots.py
+```
+
 ## Project Structure
 
 ```text
