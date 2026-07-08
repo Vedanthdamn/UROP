@@ -47,8 +47,8 @@ def _compute_class_weights(y: np.ndarray) -> Dict[int, float]:
     return {int(cls): float(weight) for cls, weight in zip(classes, weights)}
 
 
-def _evaluate(y_true: np.ndarray, y_prob: np.ndarray, loss: float) -> Dict[str, Any]:
-    y_pred = (y_prob >= 0.5).astype(np.int32)
+def _evaluate(y_true: np.ndarray, y_prob: np.ndarray, loss: float, threshold: float = 0.5) -> Dict[str, Any]:
+    y_pred = (y_prob >= threshold).astype(np.int32)
     return {
         "accuracy": float(accuracy_score(y_true, y_pred)),
         "precision": float(precision_score(y_true, y_pred, zero_division=0)),
@@ -56,6 +56,7 @@ def _evaluate(y_true: np.ndarray, y_prob: np.ndarray, loss: float) -> Dict[str, 
         "f1_score": float(f1_score(y_true, y_pred, zero_division=0)),
         "roc_auc": float(roc_auc_score(y_true, y_prob)),
         "loss": float(loss),
+        "threshold": float(threshold),
         "classification_report": classification_report(y_true, y_pred, digits=4),
         "y_prob": y_prob.tolist(),
         "y_true": y_true.tolist(),
@@ -85,10 +86,10 @@ def _save_loss_curve(history: tf.keras.callbacks.History) -> None:
 def run_training_pipeline(
     csv_path: str = "data/raw/heart_disease_uci.csv",
     target_size: int = 12000,
-    epochs: int = 50,
+    epochs: int = 120,
     batch_size: int = 32,
     random_state: int = 42,
-    learning_rate: float = 2e-4,
+    learning_rate: float = 3e-4,
     model_output_path: str = "models/centralized_model.h5",
 ) -> Tuple[Dict[str, Any], tf.keras.callbacks.History]:
     """Train centralized model and evaluate strictly on unseen test split."""
@@ -111,7 +112,8 @@ def run_training_pipeline(
 
     model = build_full_model(input_dim=X_train.shape[1], learning_rate=learning_rate)
     callbacks = [
-        tf.keras.callbacks.EarlyStopping(monitor="val_loss", patience=5, restore_best_weights=True),
+        tf.keras.callbacks.EarlyStopping(monitor="val_loss", patience=12, restore_best_weights=True),
+        tf.keras.callbacks.ReduceLROnPlateau(monitor="val_loss", factor=0.5, patience=4, min_lr=1e-5, verbose=0),
         tf.keras.callbacks.TerminateOnNaN(),
     ]
 
@@ -126,9 +128,12 @@ def run_training_pipeline(
         callbacks=callbacks,
     )
 
+    # Standard 0.5 decision threshold. The classes are near-balanced, and the validation
+    # split is drawn from the train-origin distribution (not the held-out test patients),
+    # so it is used only for early stopping, not to shift the reported operating point.
     test_loss, _ = model.evaluate(X_test, y_test, verbose=0)
     y_prob = model.predict(X_test, verbose=0).ravel()
-    metrics = _evaluate(y_true=y_test, y_prob=y_prob, loss=float(test_loss))
+    metrics = _evaluate(y_true=y_test, y_prob=y_prob, loss=float(test_loss), threshold=0.5)
 
     Path(model_output_path).parent.mkdir(parents=True, exist_ok=True)
     model.save(model_output_path, include_optimizer=False)
@@ -144,6 +149,7 @@ def run_training_pipeline(
                 "f1_score": metrics["f1_score"],
                 "roc_auc": metrics["roc_auc"],
                 "loss": metrics["loss"],
+                "threshold": metrics["threshold"],
             },
             indent=2,
         ),

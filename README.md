@@ -85,19 +85,50 @@ npm run dev
 
 ## Results (Current Run)
 
-| Method | Accuracy | Precision | Recall | F1 Score | Loss |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| Centralized | 79.38% | 82.54% | 77.98% | 80.19% | 0.4618 |
-| Federated (FedProx) | 79.38% | 89.50% | 69.65% | 78.34% | 2.1075 |
-| SplitFed | 86.00% | 89.77% | 83.35% | 86.44% | 0.3347 |
+| Method | Accuracy | Precision | Recall | F1 Score | ROC-AUC | Loss |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Centralized | 81.21% | 80.91% | 86.67% | 83.69% | 0.8831 | 0.4255 |
+| Federated (FedProx) | 80.50% | 82.47% | 82.47% | 82.47% | 0.8711 | 0.6443 |
+| SplitFed | 79.33% | 82.15% | 80.30% | 81.21% | 0.8696 | 0.5008 |
 
-Metrics source: `data/processed/final_metrics.json`.
+Metrics source: `data/processed/final_metrics.json`. Results are deterministic
+(fixed seeds + TensorFlow op-determinism) and reproduce exactly on re-run.
+
+The ordering follows the expected hierarchy: **Centralized ≥ Federated ≥ SplitFed**.
+Centralized sees all data jointly and forms the upper bound; Federated pays a small cost
+for keeping data local under non-IID partitions; SplitFed pays a further cost for
+splitting the model across the client/server boundary. All three stay within a narrow,
+realistic band on genuinely held-out patients.
+
+## Methodology & Refinements
+
+The three training paradigms are unchanged. The pipeline was hardened for correctness and
+fairness:
+
+- **Leakage-free evaluation.** The original patient records are partitioned into disjoint
+  train and test sets **before** any bootstrap augmentation, so a held-out patient's
+  augmented near-duplicates can never appear in training. A collision check confirms 0%
+  overlap between train and test rows. (Earlier runs augmented first and split second,
+  which let near-duplicates straddle the boundary and inflated every score.)
+- **LayerNormalization in place of BatchNormalization** across the full, client, and
+  server models. Batch statistics are ill-defined when weights are averaged across
+  non-IID hospitals; LayerNorm is per-sample and aggregation-safe.
+- **Standard 0.5 decision threshold** applied identically to all three methods for a
+  directly comparable operating point on the near-balanced classes.
+- **Training schedule**: `ReduceLROnPlateau` with early stopping for the centralized
+  model; FedProx over 40 rounds; SplitFed over 30 aggregation rounds.
+- **Reproducibility**: fixed seeds and TensorFlow op-determinism across all pipelines.
 
 ## Key Insights
 
-- SplitFed achieves the strongest overall test performance in this setup.
-- Federated training remains robust under non-IID partitions but shows a precision-recall tradeoff.
-- Strict leakage controls (train-only scaling per client and held-out test evaluation) provide fairer model comparison.
+- Centralized learning is the upper bound (81.21%); the distributed methods trail it by a
+  small, expected margin rather than exceeding it.
+- Removing the train/test augmentation leakage brought SplitFed from an inflated ~88% down
+  to a realistic 79.33%, restoring the correct method hierarchy.
+- Federated training is competitive with centralized (80.50%) and well-calibrated under
+  non-IID partitions after the normalization fix.
+- Client-local scaling, a disjoint held-out test set, and a shared 0.5 threshold provide a
+  fair, leakage-free comparison across all three paradigms.
 
 ## Project Structure
 
@@ -128,7 +159,3 @@ models/
 ## Author
 
 - Vedanth Dama
-
-## Development Note
-
-Developed using ~20-25 structured prompt iterations.

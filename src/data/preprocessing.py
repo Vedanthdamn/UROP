@@ -62,8 +62,10 @@ def _fill_missing_values(df: pd.DataFrame, categorical_cols: list[str]) -> pd.Da
 
     object_cols = [
         col
-        for col in df.select_dtypes(include=["object", "category", "bool"]).columns
+        for col in df.columns
         if col not in existing_categorical
+        and col not in numeric_cols
+        and not pd.api.types.is_numeric_dtype(df[col])
     ]
     for col in object_cols:
         mode = df[col].mode(dropna=True)
@@ -83,11 +85,17 @@ def _label_encode_columns(df: pd.DataFrame, columns: list[str]) -> pd.DataFrame:
 
 
 def _encode_remaining_categoricals(df: pd.DataFrame, exclude: list[str]) -> tuple[pd.DataFrame, list[str]]:
-    """Label-encode any remaining non-numeric columns not already handled."""
+    """Label-encode any remaining non-numeric columns not already handled.
+
+    Uses a numeric-dtype test rather than an explicit dtype allow-list so that
+    pandas string/`StringDtype` columns (the default text dtype in newer pandas) are
+    encoded too. Without this, text features such as ``slope`` survive as strings and
+    the downstream float conversion fails on a clean rebuild.
+    """
     remaining = [
         col
         for col in df.columns
-        if col not in exclude and df[col].dtype in ["object", "category", "bool"]
+        if col not in exclude and not pd.api.types.is_numeric_dtype(df[col])
     ]
 
     for col in remaining:

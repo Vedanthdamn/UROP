@@ -19,7 +19,7 @@ def get_server_model(activation_dim: int = 32) -> tf.keras.Model:
 
     inputs = tf.keras.Input(shape=(activation_dim,), name="server_input")
     x = tf.keras.layers.Dense(16, activation="relu", kernel_initializer="he_normal", name="server_dense_16")(inputs)
-    x = tf.keras.layers.BatchNormalization(name="server_bn_16")(x)
+    x = tf.keras.layers.LayerNormalization(name="server_ln_16")(x)
     x = tf.keras.layers.Dropout(0.2, name="server_dropout_16")(x)
     outputs = tf.keras.layers.Dense(1, activation="sigmoid", name="server_output")(x)
 

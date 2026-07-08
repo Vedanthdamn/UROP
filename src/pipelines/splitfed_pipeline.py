@@ -53,8 +53,8 @@ def _set_global_determinism(seed: int) -> None:
         pass
 
 
-def _compute_metrics(y_true: np.ndarray, y_prob: np.ndarray, loss: float) -> Dict[str, float]:
-    y_pred = (y_prob >= 0.5).astype(np.int32)
+def _compute_metrics(y_true: np.ndarray, y_prob: np.ndarray, loss: float, threshold: float = 0.5) -> Dict[str, float]:
+    y_pred = (y_prob >= threshold).astype(np.int32)
     return {
         "accuracy": float(accuracy_score(y_true, y_pred)),
         "precision": float(precision_score(y_true, y_pred, zero_division=0)),
@@ -62,6 +62,7 @@ def _compute_metrics(y_true: np.ndarray, y_prob: np.ndarray, loss: float) -> Dic
         "f1_score": float(f1_score(y_true, y_pred, zero_division=0)),
         "roc_auc": float(roc_auc_score(y_true, y_prob)),
         "loss": float(loss),
+        "threshold": float(threshold),
     }
 
 
@@ -247,7 +248,7 @@ def _save_publication_plots(
 
 
 def run_splitfed_pipeline(
-    rounds: int = 20,
+    rounds: int = 30,
     local_epochs: int = 3,
     batch_size: int = 32,
     learning_rate: float = 2e-4,
@@ -307,13 +308,15 @@ def run_splitfed_pipeline(
 
         print(f"[Round {round_idx}] Validation Accuracy: {val_acc:.4f} | Validation Loss: {val_loss:.4f}")
 
+    # Standard 0.5 decision threshold, applied identically to all three methods so their
+    # reported operating points remain directly comparable on the held-out global test set.
     splitfed_test_loss, splitfed_test_prob = _evaluate_split_pair(
         global_client_model,
         global_server_model,
         X_test_global,
         y_test_global,
     )
-    splitfed_metrics = _compute_metrics(y_test_global, splitfed_test_prob, splitfed_test_loss)
+    splitfed_metrics = _compute_metrics(y_test_global, splitfed_test_prob, splitfed_test_loss, threshold=0.5)
 
     centralized_prob = _load_standard_model_predictions(CENTRAL_MODEL_PATH, X_test_global)
     federated_prob = _load_standard_model_predictions(FED_MODEL_PATH, X_test_global)
@@ -322,8 +325,8 @@ def run_splitfed_pipeline(
 
     centralized_loss = float(tf.keras.losses.BinaryCrossentropy()(y_test_global.reshape(-1, 1), centralized_prob.reshape(-1, 1)).numpy())
     federated_loss = float(tf.keras.losses.BinaryCrossentropy()(y_test_global.reshape(-1, 1), federated_prob.reshape(-1, 1)).numpy())
-    centralized_metrics = _compute_metrics(y_test_global, centralized_prob, centralized_loss)
-    federated_metrics = _compute_metrics(y_test_global, federated_prob, federated_loss)
+    centralized_metrics = _compute_metrics(y_test_global, centralized_prob, centralized_loss, threshold=0.5)
+    federated_metrics = _compute_metrics(y_test_global, federated_prob, federated_loss, threshold=0.5)
 
     all_metrics = {
         "centralized": centralized_metrics,
@@ -368,6 +371,7 @@ def run_splitfed_pipeline(
                 "f1_score": splitfed_metrics["f1_score"],
                 "roc_auc": splitfed_metrics["roc_auc"],
                 "loss": splitfed_metrics["loss"],
+                "threshold": splitfed_metrics["threshold"],
             },
             indent=2,
         ),
@@ -383,6 +387,7 @@ def run_splitfed_pipeline(
                     "recall": centralized_metrics["recall"],
                     "f1_score": centralized_metrics["f1_score"],
                     "loss": centralized_metrics["loss"],
+                    "threshold": centralized_metrics["threshold"],
                 },
                 "federated": {
                     "accuracy": federated_metrics["accuracy"],
@@ -390,6 +395,7 @@ def run_splitfed_pipeline(
                     "recall": federated_metrics["recall"],
                     "f1_score": federated_metrics["f1_score"],
                     "loss": federated_metrics["loss"],
+                    "threshold": federated_metrics["threshold"],
                 },
                 "splitfed": {
                     "accuracy": splitfed_metrics["accuracy"],
@@ -397,6 +403,7 @@ def run_splitfed_pipeline(
                     "recall": splitfed_metrics["recall"],
                     "f1_score": splitfed_metrics["f1_score"],
                     "loss": splitfed_metrics["loss"],
+                    "threshold": splitfed_metrics["threshold"],
                 },
             },
             indent=2,

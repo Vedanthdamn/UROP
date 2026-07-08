@@ -17,12 +17,14 @@ def get_client_model(input_dim: int) -> tf.keras.Model:
     if input_dim <= 0:
         raise ValueError("input_dim must be a positive integer.")
 
+    # LayerNormalization keeps per-sample statistics (no running mean/variance), so the
+    # client-side weights remain valid after cross-hospital averaging in SplitFed.
     inputs = tf.keras.Input(shape=(input_dim,), name="client_input")
     x = tf.keras.layers.Dense(64, activation="relu", kernel_initializer="he_normal", name="client_dense_64")(inputs)
-    x = tf.keras.layers.BatchNormalization(name="client_bn_64")(x)
+    x = tf.keras.layers.LayerNormalization(name="client_ln_64")(x)
     x = tf.keras.layers.Dropout(0.2, name="client_dropout_64")(x)
     outputs = tf.keras.layers.Dense(32, activation="relu", kernel_initializer="he_normal", name="client_dense_32")(x)
-    outputs = tf.keras.layers.BatchNormalization(name="client_bn_32")(outputs)
+    outputs = tf.keras.layers.LayerNormalization(name="client_ln_32")(outputs)
     outputs = tf.keras.layers.Dropout(0.2, name="client_dropout_32")(outputs)
 
     return tf.keras.Model(inputs=inputs, outputs=outputs, name="client_model")

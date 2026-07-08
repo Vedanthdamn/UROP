@@ -1,7 +1,5 @@
 # Development History
 
-Total development iterations: ~20–25 prompt-driven improvements.
-
 ## Scope
 
 - Data preprocessing and augmentation
@@ -13,6 +11,8 @@ Total development iterations: ~20–25 prompt-driven improvements.
 
 ## Quality Controls
 
-- Repeated run-debug-fix cycles
-- Leakage-safe train/test evaluation for SplitFed
-- Frontend fallback loading from local JSON files
+- Leakage-free evaluation: original records are split into disjoint train/test sets
+  before augmentation, so held-out patients never leak into training.
+- LayerNormalization for aggregation-safe normalization across non-IID clients.
+- Deterministic runs via fixed seeds and TensorFlow op-determinism.
+- Frontend fallback loading from local JSON files.

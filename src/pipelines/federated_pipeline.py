@@ -48,8 +48,8 @@ def _weighted_accuracy(metrics: List[Tuple[int, Metrics]]) -> Metrics:
     return {"accuracy": weighted_acc / total}
 
 
-def _compute_binary_metrics(y_true: np.ndarray, y_prob: np.ndarray, loss: float) -> Dict[str, float]:
-    y_pred = (y_prob >= 0.5).astype(np.int32)
+def _compute_binary_metrics(y_true: np.ndarray, y_prob: np.ndarray, loss: float, threshold: float = 0.5) -> Dict[str, float]:
+    y_pred = (y_prob >= threshold).astype(np.int32)
     return {
         "accuracy": float(accuracy_score(y_true, y_pred)),
         "precision": float(precision_score(y_true, y_pred, zero_division=0)),
@@ -57,6 +57,7 @@ def _compute_binary_metrics(y_true: np.ndarray, y_prob: np.ndarray, loss: float)
         "f1_score": float(f1_score(y_true, y_pred, zero_division=0)),
         "roc_auc": float(roc_auc_score(y_true, y_prob)),
         "loss": float(loss),
+        "threshold": float(threshold),
     }
 
 
@@ -200,7 +201,7 @@ def run_federated_pipeline(
     local_epochs: int = 5,
     batch_size: int = 32,
     random_state: int = 42,
-    learning_rate: float = 2e-4,
+    learning_rate: float = 3e-4,
     mu: float = 0.01,
 ) -> Dict[str, Any]:
     """Run FedProx pipeline and report final metrics on held-out test set only."""
@@ -254,9 +255,10 @@ def run_federated_pipeline(
     GLOBAL_MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
     model.save(GLOBAL_MODEL_PATH, include_optimizer=False)
 
+    # Standard 0.5 decision threshold, evaluated on the held-out global test set.
     test_loss, _ = model.evaluate(X_test, y_test, verbose=0)
     y_prob = model.predict(X_test, verbose=0).ravel()
-    final_metrics = _compute_binary_metrics(y_true=y_test, y_prob=y_prob, loss=float(test_loss))
+    final_metrics = _compute_binary_metrics(y_true=y_test, y_prob=y_prob, loss=float(test_loss), threshold=0.5)
 
     FL_METRICS_PATH.parent.mkdir(parents=True, exist_ok=True)
     FL_METRICS_PATH.write_text(
@@ -270,6 +272,7 @@ def run_federated_pipeline(
                 "f1_score": final_metrics["f1_score"],
                 "roc_auc": final_metrics["roc_auc"],
                 "loss": final_metrics["loss"],
+                "threshold": final_metrics["threshold"],
             },
             indent=2,
         ),
