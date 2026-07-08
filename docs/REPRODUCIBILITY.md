@@ -28,6 +28,15 @@ augmentation, so the held-out test set is leakage-free.
 python src/utils/generate_report_plots.py
 ```
 
+5. (Optional) Run the DP-SGD privacy ablation and regenerate its figure. Epsilon is
+   computed with a Renyi-DP accountant (`src/federated/dp_accountant.py`) and is
+   deterministic for a fixed seed, noise multiplier, and step count:
+
+```bash
+python src/pipelines/dp_epsilon_sweep.py
+python src/utils/generate_dp_plots.py
+```
+
 ## Frontend
 
 ```bash
